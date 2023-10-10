@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2021 Brian Starkey <stark3y@gmail.com>
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -17,10 +17,12 @@
 #include "hardware/uart.h"
 #include "hardware/watchdog.h"
 
+//#define DEBUG 1
+
 #ifdef DEBUG
 #include <stdio.h>
-#include "pico/stdio_usb.h"
-#define DBG_PRINTF_INIT() stdio_usb_init()
+//#include "pico/stdio_usb.h"
+#define DBG_PRINTF_INIT() stdio_init_all()
 #define DBG_PRINTF(...) printf(__VA_ARGS__)
 #else
 #define DBG_PRINTF_INIT() { }
@@ -36,7 +38,7 @@
 
 #define UART_TX_PIN 0
 #define UART_RX_PIN 1
-#define UART_BAUD   921600
+#define UART_BAUD   250000
 
 #define CMD_SYNC   (('S' << 0) | ('Y' << 8) | ('N' << 16) | ('C' << 24))
 #define CMD_READ   (('R' << 0) | ('E' << 8) | ('A' << 16) | ('D' << 24))
@@ -53,7 +55,7 @@
 #define RSP_OK   (('O' << 0) | ('K' << 8) | ('O' << 16) | ('K' << 24))
 #define RSP_ERR  (('E' << 0) | ('R' << 8) | ('R' << 16) | ('!' << 24))
 
-#define IMAGE_HEADER_OFFSET (12 * 1024)
+#define IMAGE_HEADER_OFFSET (36 * 1024)
 
 #define WRITE_ADDR_MIN (XIP_BASE + IMAGE_HEADER_OFFSET + FLASH_SECTOR_SIZE)
 #define ERASE_ADDR_MIN (XIP_BASE + IMAGE_HEADER_OFFSET)
@@ -579,7 +581,7 @@ static enum state state_wait_for_sync(struct cmd_context *ctx)
 	while (idx < sizeof(ctx->opcode)) {
 		uart_read_blocking(uart0, &recv[idx], 1);
 		gpio_xor_mask((1 << PICO_DEFAULT_LED_PIN));
-
+		DBG_PRINTF("%i", idx);
 		if (recv[idx] != match[idx]) {
 			// Start again
 			idx = 0;
@@ -682,6 +684,7 @@ static bool should_stay_in_bootloader()
 
 int main(void)
 {
+	DBG_PRINTF_INIT();
 	gpio_init(PICO_DEFAULT_LED_PIN);
 	gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 	gpio_put(PICO_DEFAULT_LED_PIN, 1);
